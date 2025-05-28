@@ -1,0 +1,7 @@
+fastapi
+sqlmodel
+uvicorn
+pydantic
+sqlalchemy
+psycopg2-binary
+loguru
