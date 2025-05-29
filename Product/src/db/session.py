@@ -6,7 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL")  # Change this to your database URL
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=10,          # number of persistent connections
+    max_overflow=20,       # extra connections beyond pool_size
+    pool_timeout=30,       # timeout for getting a connection
+    pool_recycle=1800,     # close & reopen connections after 30 min
+    echo=False             # set True to log SQL (for debugging)
+)
 
 async_session = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False

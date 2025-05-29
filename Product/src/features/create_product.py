@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from typing import Annotated
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
@@ -33,7 +34,7 @@ class CreatedProductEvent(IEvent):
 async def create_product_request_handler(
 		request: CreateProductRequest,
 		session: Annotated[AsyncSession, Depends(get_session)]
-		) -> CreateProductResponse:
+		) -> ProductPublic:
 	"""
 	Handle the creation of a new product.
 	:param request: The request containing product data.
@@ -44,7 +45,7 @@ async def create_product_request_handler(
 	await session.commit()
 	await session.refresh(product)
 	await mediator.publish(CreatedProductEvent(product=product))  # Publish the event after creation
-	return CreateProductResponse(**product.dict())  # Simulating ID assignment
+	return product  # Simulating ID assignment
 
 async def created_product_event_1_handler(
 		event: CreatedProductEvent,
@@ -73,8 +74,8 @@ mediator.register_event_handler(CreatedProductEvent, created_product_event_2_han
 
 mediator.register_request_handler(CreateProductRequest, create_product_request_handler)
 
-@router.post("/products", response_model=CreateProductResponse)
-async def create_product_endpoint(request: CreateProductRequest, session: AsyncSession = Depends(get_session)) -> CreateProductResponse:
+@router.post("/products", summary="Create Product", description="Create a new product with the provided details.")
+async def create_product_endpoint(request: CreateProductRequest, session: AsyncSession = Depends(get_session)):
 	"""
 	Endpoint to create a new product.
 	:param request: The request containing product data.
@@ -82,4 +83,4 @@ async def create_product_endpoint(request: CreateProductRequest, session: AsyncS
 	:return: The created product response.
 	"""
 	product = await mediator.send(request, session=session)
-	return product
+	return JSONResponse(content=product.dict(), status_code=201)

@@ -2,7 +2,7 @@ from logging.config import dictConfig
 
 class CorrelationIdFilter:
     def __call__(self, record):
-        from src.middleware.correlation_context import get_correlation_id
+        from src.core.correlation_context import get_correlation_id
         record.correlation_id = get_correlation_id() or "-"
         return True
 
