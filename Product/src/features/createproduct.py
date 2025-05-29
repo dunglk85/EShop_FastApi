@@ -1,8 +1,7 @@
-from src.models.product import ProductBase, Product
+from src.models.product import ProductBase, Product, ProductPublic
 from src.core.mediator import IRequest, IEvent, mediator
-#from endpoints import router
 from src.db.session import get_session
-from sqlmodel import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from typing import Annotated
 from fastapi import APIRouter
@@ -16,12 +15,12 @@ class CreateProductRequest(ProductBase, IRequest):
 	"""
 	pass
 
-class CreateProductResponse(ProductBase):
+class CreateProductResponse(ProductPublic):
 	"""
 	CreateProductResponse is a subclass of Product that can be used to return the created product instance.
 	It inherits all fields from Product and can be used to return additional information if needed.
 	"""
-	id: int
+	pass
 
 class CreatedProductEvent(IEvent):
 	"""
@@ -33,7 +32,7 @@ class CreatedProductEvent(IEvent):
 
 async def create_product_request_handler(
 		request: CreateProductRequest,
-		session: Annotated[Session, Depends(get_session)]
+		session: Annotated[AsyncSession, Depends(get_session)]
 		) -> CreateProductResponse:
 	"""
 	Handle the creation of a new product.
@@ -42,8 +41,8 @@ async def create_product_request_handler(
 	"""
 	product = Product(**request.dict())
 	session.add(product)
-	session.commit()
-	session.refresh(product)
+	await session.commit()
+	await session.refresh(product)
 	await mediator.publish(CreatedProductEvent(product=product))  # Publish the event after creation
 	return CreateProductResponse(**product.dict())  # Simulating ID assignment
 
@@ -74,8 +73,8 @@ mediator.register_event_handler(CreatedProductEvent, created_product_event_2_han
 
 mediator.register_request_handler(CreateProductRequest, create_product_request_handler)
 
-@router.post("/products/", response_model=CreateProductResponse)
-async def create_product_endpoint(request: CreateProductRequest, session: Session = Depends(get_session)) -> CreateProductResponse:
+@router.post("/products", response_model=CreateProductResponse)
+async def create_product_endpoint(request: CreateProductRequest, session: AsyncSession = Depends(get_session)) -> CreateProductResponse:
 	"""
 	Endpoint to create a new product.
 	:param request: The request containing product data.

@@ -1,17 +1,25 @@
-from sqlmodel import Session, create_engine, SQLModel
+from sqlmodel import SQLModel
 from sqlalchemy import event
 from datetime import datetime, timezone
 import os
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL")  # Change this to your database URL
-engine = create_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL)
 
-def get_session():
-    with Session(engine) as session:
+async_session = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
+async def get_session() -> AsyncSession:
+    async with async_session() as session:
         yield session
 
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+async def create_db_and_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
 
 @event.listens_for(SQLModel, "before_insert", propagate=True)
 def set_created_updated_timestamps(mapper, connection, target):

@@ -1,7 +1,8 @@
 fastapi
-sqlmodel
+sqlmodel[asyncio]
 uvicorn
 pydantic
 sqlalchemy
-psycopg2-binary
+#psycopg2-binary
 loguru
+asyncpg

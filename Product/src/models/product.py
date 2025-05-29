@@ -8,3 +8,6 @@ class ProductBase(SQLModel):
 
 class Product(ProductBase, table=True, inherit=True, mixin=AuditMixin):
     id: int = Field(default=None, primary_key=True)
+
+class ProductPublic(ProductBase):
+    id: int
