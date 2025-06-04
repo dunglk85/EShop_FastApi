@@ -5,7 +5,6 @@ class ProductBase(SQLModel):
     name: str = Field(..., min_length=3, max_length=100, index=True)
     description: str = Field(None, max_length=500, index=True)
     price: float = Field(..., gt=0)
-    stock: int = Field(..., ge=0, default=0)  # Added stock field to track product availability
 
 class Product(ProductBase, table=True, inherit=True, mixin=AuditMixin):
     id: int = Field(default=None, primary_key=True)

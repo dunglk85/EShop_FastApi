@@ -1,0 +1,24 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+
+  basket-api:
+    build: ./app
+    container_name: basket-api
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+volumes:
+  redis-data:

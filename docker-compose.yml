@@ -1,0 +1,86 @@
+# This is a high-level summary file that will be followed by code for each service.
+# We'll start with the docker-compose setup and then generate each service step-by-step.
+
+version: '3.8'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  postgres_order:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: order_db
+    ports:
+      - "5433:5432"
+
+  order-service:
+    build: ./order-service
+    depends_on:
+      - kafka
+      - postgres_order
+    ports:
+      - "8001:8000"
+
+  postgres_inventory:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: inventory_db
+    ports:
+      - "5434:5432"
+
+  inventory-service:
+    build: ./inventory-service
+    depends_on:
+      - kafka
+      - postgres_inventory
+    ports:
+      - "8002:8000"
+
+  postgres_payment:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: payment_db
+    ports:
+      - "5435:5432"
+
+  payment-service:
+    build: ./payment-service
+    depends_on:
+      - kafka
+      - postgres_payment
+    ports:
+      - "8003:8000"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - DYNAMIC_CONFIG_ENABLED=true
+    depends_on:
+      - kafka

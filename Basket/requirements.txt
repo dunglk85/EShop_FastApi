@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+loguru
+aiokafka
+aio-pika
+python-dotenv
+redis
