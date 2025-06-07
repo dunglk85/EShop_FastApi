@@ -5,12 +5,12 @@ from datetime import datetime
 
 class IDomainEvent(ABC):
     @property
-    def event_id(self) -> UUID:
+    def id(self) -> UUID:
         return uuid4()
 
     @property
     def occurred_on(self) -> datetime:
-        return datetime.utcnow()
+        return datetime.now()
 
     @property
     def event_type(self) -> str:

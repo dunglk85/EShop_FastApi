@@ -1,38 +1,47 @@
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar, List
-from domain.abstraction.entity import IEntity, IEntityWithId
-from domain.abstraction.domain_event import IDomainEvent
+from typing import List, Optional, TypeVar, Type, cast
 import datetime
 
-T = TypeVar("T")
+from domain.abstraction.entity import IEntity, IEntityWithId
+from domain.abstraction.domain_event import IDomainEvent
+
+T = TypeVar("T")  # ID type
+TAggregate = TypeVar("TAggregate", bound="Aggregate")
+
 
 class IAggregate(IEntity, ABC):
     @property
     @abstractmethod
     def domain_events(self) -> List[IDomainEvent]:
-        """Returns the list of domain events."""
-        pass
+        ...
 
     @abstractmethod
     def clear_domain_events(self) -> List[IDomainEvent]:
-        pass
-    
+        ...
+
+
 class IAggregateId(IAggregate, IEntityWithId[T], ABC):
     pass
 
+
 class Aggregate(IAggregateId[T], ABC):
+
     def __init__(
         self,
         id: T,
         created_by: Optional[str] = None,
         last_modified_by: Optional[str] = None,
     ):
-        self.id: T = id
-        self.created_at: datetime = datetime.now(datetime.utc)
+        self._id: T = id
+        self.created_at: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
         self.created_by: Optional[str] = created_by
-        self.last_modified: datetime = datetime.now(datetime.utc)
+        self.last_modified: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
         self.last_modified_by: Optional[str] = last_modified_by
         self._domain_events: List[IDomainEvent] = []
+
+    @property
+    def id(self) -> T:
+        return self._id
 
     @property
     def domain_events(self) -> List[IDomainEvent]:
@@ -45,3 +54,26 @@ class Aggregate(IAggregateId[T], ABC):
         events = list(self._domain_events)
         self._domain_events.clear()
         return events
+
+    def apply(self, event: object):
+        """Dynamically call the corresponding _apply_<EventName> method."""
+        method = f"_apply_{type(event).__name__}"
+        if hasattr(self, method):
+            getattr(self, method)(event)
+
+    def raise_event(self, event: IDomainEvent):
+        self.apply(event)
+        self.add_domain_event(event)
+
+    @classmethod
+    def rehydrate(cls: Type[TAggregate], id: T , events: List[object]) -> TAggregate:
+        """Factory-safe rehydration method for any Aggregate subclass."""
+        instance = cls.__new__(cls)
+        cls.__allow_init = True
+        instance.__init__(id)
+        cls.__allow_init = False
+
+        for event in events:
+            instance.apply(event)
+
+        return instance

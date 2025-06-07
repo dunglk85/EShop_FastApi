@@ -18,10 +18,6 @@ class UUIDIdentifier(ABC):
             raise DomainException(f"{cls.__name__} cannot be empty.")
         return cls(value)
 
-    @classmethod
-    def new(cls: Type[T]) -> T:
-        return cls(uuid4())
-
     def __str__(self) -> str:
         return str(self.value)
 
