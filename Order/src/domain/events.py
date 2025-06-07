@@ -52,10 +52,11 @@ class OrderItemRemoved(IDomainEvent):
     product_id: ProductId
     
 @dataclass(frozen=True)
-class OrderItemQuantityChanged(IDomainEvent):
+class OrderItemChanged(IDomainEvent):
     order_id: OrderId
     product_id: ProductId
     new_quantity: int
+    new_price: float
     
 @dataclass(frozen=True)
 class OrderBillingAddressChanged(IDomainEvent):
@@ -72,7 +73,8 @@ class OrderShippingAddressChanged(IDomainEvent):
 class OrderPaymentMethodChanged(IDomainEvent):
     order_id: OrderId
     payment: Payment
+    
 @dataclass(frozen=True)
-class OrderChangeName(IDomainEvent):
+class OrderNameChanged(IDomainEvent):
 	order_id: OrderId
 	new_order_name: OrderName
