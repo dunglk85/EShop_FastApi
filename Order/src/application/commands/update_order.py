@@ -2,19 +2,22 @@ from dataclasses import dataclass
 from src.application.repositories.command_order_repository import IcommandOrderRepository
 from src.domain.value_objects.ids import OrderId
 from src.application.dtos import OrderDTO
+from application.requests import *
 
 
 class UpdateOrderHandler:
     def __init__(self, repository: IcommandOrderRepository):
         self.repository = repository
 
-    async def handle(self, command: OrderDTO) -> bool:
-        order = await self.repository.get_order_by_id(OrderId.of(command.order_id))
+    async def handle(self, command: CommandUpdateOrder) -> bool:
+        order = await self.repository.get_order_by_id(OrderId.of(command.order.order_id))
 
         if not order:
-            raise ValueError(f"Order with ID {command.order_id} does not exist.")
+            raise ValueError(f"Order with ID {command.order.order_id} does not exist.")
+        # Clear any existing domain events before updating
+        order.clear_domain_events()
 
-        for key, value in command.new_details.items():
+        for key, value in command.order.new_details.items():
             if key == "order_name":
                 order.change_order_name(value)
             elif key == "shipping_address":
@@ -45,5 +48,5 @@ class UpdateOrderHandler:
                     )
                     
         # Save the updated aggregate
-        await self.repository.save(order)
-        return True
+        await self.repository.forward(order)
+        return order

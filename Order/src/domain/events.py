@@ -4,7 +4,7 @@ from value_objects.address import Address
 from value_objects.payment import Payment
 from value_objects.order_name import OrderName
 from value_objects.ids import ProductId, CustomerId, OrderId
-from domain.abstraction.domain_event import IDomainEvent
+from domain.abstraction.domain_event import IDomainEvent, IntegrationEvent
 
 
 @dataclass(frozen=True)
@@ -17,20 +17,20 @@ class OrderCreated(IDomainEvent):
     payment: Payment
 
 @dataclass(frozen=True)
-class OrderCanceled(IDomainEvent):
+class OrderCanceled(IntegrationEvent):
     order_id: OrderId
     
 @dataclass(frozen=True)
-class OrderConfirmed(IDomainEvent):
+class OrderConfirmed(IntegrationEvent):
 	order_id: OrderId
 
 @dataclass(frozen=True)
-class OrderShipped(IDomainEvent):
+class OrderShipped(IntegrationEvent):
 	order_id: OrderId
 	tracking_number: str
      
 @dataclass(frozen=True)
-class OrderFulfilled(IDomainEvent):
+class OrderFulfilled(IntegrationEvent):
 	order_id: OrderId
 	tracking_number: str
 
@@ -55,8 +55,8 @@ class OrderItemRemoved(IDomainEvent):
 class OrderItemChanged(IDomainEvent):
     order_id: OrderId
     product_id: ProductId
-    new_quantity: int
-    new_price: float
+    quantity: int
+    price: float
     
 @dataclass(frozen=True)
 class OrderBillingAddressChanged(IDomainEvent):

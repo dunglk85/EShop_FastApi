@@ -1,9 +1,43 @@
-# This is a high-level summary file that will be followed by code for each service.
-# We'll start with the docker-compose setup and then generate each service step-by-step.
-
 version: '3.8'
 
 services:
+  postgres_order:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orderdb
+    ports:
+      - "5433:5432"
+
+  postgres_basket:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: basketdb
+    ports:
+      - "5434:5432"
+
+  postgres_product:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: productdb
+    ports:
+      - "5435:5432"
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
   zookeeper:
     image: bitnami/zookeeper:latest
     ports:
@@ -23,64 +57,140 @@ services:
     depends_on:
       - zookeeper
 
-  postgres_order:
-    image: postgres:14
+  # --- ORDER SERVICE ---
+  order:
+    build:
+      context: ./Order
+      dockerfile: Dockerfile
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: order_db
-    ports:
-      - "5433:5432"
-
-  order-service:
-    build: ./order-service
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_order:5432/orderdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
     depends_on:
-      - kafka
       - postgres_order
-    ports:
-      - "8001:8000"
-
-  postgres_inventory:
-    image: postgres:14
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: inventory_db
-    ports:
-      - "5434:5432"
-
-  inventory-service:
-    build: ./inventory-service
-    depends_on:
+      - redis
       - kafka
-      - postgres_inventory
-    ports:
-      - "8002:8000"
+      - mongo
 
-  postgres_payment:
-    image: postgres:14
+  order_celery_worker:
+    build:
+      context: ./Order
+      dockerfile: Dockerfile
+    command: celery -A src.infrastructure.outbox.celery_worker.celery_app worker --loglevel=info
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: payment_db
-    ports:
-      - "5435:5432"
-
-  payment-service:
-    build: ./payment-service
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_order:5432/orderdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
     depends_on:
+      - order
+      - redis
       - kafka
-      - postgres_payment
-    ports:
-      - "8003:8000"
+      - mongo
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    ports:
-      - "8080:8080"
+  order_projection_worker:
+    build:
+      context: ./Order
+      dockerfile: Dockerfile
+    command: python src/infrastructure/projection/worker.py
     environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - DYNAMIC_CONFIG_ENABLED=true
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
+      - order
+      - redis
+      - mongo
+
+  # --- BASKET SERVICE ---
+  basket:
+    build:
+      context: ./Basket
+      dockerfile: Dockerfile
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_basket:5432/basketdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - postgres_basket
+      - redis
       - kafka
+      - mongo
+
+  basket_celery_worker:
+    build:
+      context: ./Basket
+      dockerfile: Dockerfile
+    command: celery -A src.infrastructure.outbox.celery_worker.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_basket:5432/basketdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - basket
+      - redis
+      - kafka
+      - mongo
+
+  basket_projection_worker:
+    build:
+      context: ./Basket
+      dockerfile: Dockerfile
+    command: python src/infrastructure/projection/worker.py
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - basket
+      - redis
+      - mongo
+
+  # --- PRODUCT SERVICE ---
+  product:
+    build:
+      context: ./Product
+      dockerfile: Dockerfile
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8002 --reload
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_product:5432/productdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - postgres_product
+      - redis
+      - kafka
+      - mongo
+
+  product_celery_worker:
+    build:
+      context: ./Product
+      dockerfile: Dockerfile
+    command: celery -A src.infrastructure.outbox.celery_worker.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_product:5432/productdb
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017
+    depends_on:
+      - product
+      - redis
+      - kafka
+      - mongo
+
+  product_projection_worker:
+    build:
+      context: ./Product
+      dockerfile: Dockerfile
+    command: python src/infrastructure/projection/worker.py
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - product
+      - redis
+      - mongo

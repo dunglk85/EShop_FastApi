@@ -1,7 +1,11 @@
 fastapi
-sqlmodel[asyncio]
 uvicorn
 pydantic
-sqlalchemy
 loguru
+aiokafka
+aio-pika
+python-dotenv
+redis
+celery
+sqlalchemy
 asyncpg

@@ -2,27 +2,14 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, TypeVar, Type, cast
 import datetime
 
-from domain.abstraction.entity import IEntity, IEntityWithId
+from domain.abstraction.entity import IEntityWithId
 from domain.abstraction.domain_event import IDomainEvent
 
 T = TypeVar("T")  # ID type
 TAggregate = TypeVar("TAggregate", bound="Aggregate")
 
-
-class IAggregate(IEntity, ABC):
-    @property
-    @abstractmethod
-    def domain_events(self) -> List[IDomainEvent]:
-        ...
-
-    @abstractmethod
-    def clear_domain_events(self) -> List[IDomainEvent]:
-        ...
-
-
-class IAggregateId(IAggregate, IEntityWithId[T], ABC):
+class IAggregateId(IEntityWithId[T], ABC):
     pass
-
 
 class Aggregate(IAggregateId[T], ABC):
 
@@ -55,7 +42,7 @@ class Aggregate(IAggregateId[T], ABC):
         self._domain_events.clear()
         return events
 
-    def apply(self, event: object):
+    def apply(self, event: IDomainEvent):
         """Dynamically call the corresponding _apply_<EventName> method."""
         method = f"_apply_{type(event).__name__}"
         if hasattr(self, method):

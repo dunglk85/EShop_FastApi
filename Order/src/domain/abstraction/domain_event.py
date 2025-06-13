@@ -15,3 +15,6 @@ class IDomainEvent(ABC):
     @property
     def event_type(self) -> str:
         return f"{self.__class__.__module__}.{self.__class__.__qualname__}"
+
+class IntegrationEvent(IDomainEvent):
+    is_integration_event = True

@@ -43,5 +43,5 @@ async def checkout(user_id: str, service: BasketService = Depends(get_service)):
         "user_id": user_id,
         "items": [item.dict() for item in items],
     }
-    await message_bus.publish("OrderCreated", payload)
+    await message_bus.publish("Basket_checkouted", payload)
     return {"message": "Checkout successful", "order_id": order_id}

@@ -1,10 +1,11 @@
 from src.application.repositories.query_order_repository import IQueryOrderRepository
+from application.requests import *
 
 class GetOrdersHandler:
 	def __init__(self, order_repository: IQueryOrderRepository):
 		self.order_repository = order_repository
 
-	async def handle(self):
+	async def handle(self, query: QueryOrders):
 		"""
 		Retrieves orders for a specific customer.
 
