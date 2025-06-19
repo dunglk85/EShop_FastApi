@@ -22,7 +22,7 @@ class Entity(IEntityWithId[T], ABC):
         last_modified_by: Optional[str] = None,
     ):
         self.id = id
-        self.created_at = datetime.now(datetime.utc)
+        self.created_at = datetime.now()
         self.created_by = created_by
-        self.last_modified = datetime.now(datetime.utc)
+        self.last_modified = datetime.now()
         self.last_modified_by = last_modified_by

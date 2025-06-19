@@ -1,5 +1,6 @@
 from src.application.repositories.query_order_repository import IQueryOrderRepository
-from application.requests import *
+from src.application.requests import *
+from src.application.dtos import *
 
 class GetOrderByCustomerHandler:
 	def __init__(self, order_repository: IQueryOrderRepository):
@@ -12,4 +13,5 @@ class GetOrderByCustomerHandler:
 		:param customer_id: The ID of the customer whose orders are to be retrieved.
 		:return: A list of orders associated with the given customer ID.
 		"""
-		return self.order_repository.get_orders_by_customer(query.customer_id)
+		order = await self.order_repository.get_orders_by_customer(query.customer_id)
+		return map_order_to_dto(order=order)

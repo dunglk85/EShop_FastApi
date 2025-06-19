@@ -5,7 +5,8 @@ loguru
 aiokafka
 aio-pika
 python-dotenv
-redis
-celery
+celery[redis]
 sqlalchemy
 asyncpg
+motor
+sqlmodel[asyncio]

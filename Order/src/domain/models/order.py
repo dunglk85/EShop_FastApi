@@ -16,20 +16,20 @@ from src.domain.events import (
     OrderItemChanged,
     OrderNameChanged
 )
-from value_objects.address import Address
-from value_objects.payment import Payment
-from value_objects.order_name import OrderName
-from value_objects.ids import ProductId, CustomerId, OrderId
-from domain.enum import OrderStatus
-from domain.abstraction.aggregate import Aggregate
-from domain.models.order_item import OrderItem
+from src.domain.value_objects.address import Address
+from src.domain.value_objects.payment import Payment
+from src.domain.value_objects.order_name import OrderName
+from src.domain.value_objects.ids import ProductId, CustomerId, OrderId
+from src.domain.enum import OrderStatus
+from src.domain.abstraction.aggregate import Aggregate
+from src.domain.models.order_item import OrderItem
 
 
 class Order(Aggregate[OrderId]):
     def __init__(self):
         if not getattr(self.__class__, "__allow_init", False):
             raise Exception("Use the create method to instantiate an Order.")
-        super().__init__(OrderId(uuid4()))
+        super.__init__()
 
     @property
     def customer_id(self) -> Optional[CustomerId]:
@@ -67,9 +67,19 @@ class Order(Aggregate[OrderId]):
     # --- Command Handlers that Raise Events ---
     @classmethod
     def create(cls, customer_id: CustomerId, order_name: OrderName, shipping_address: Address, billing_address: Address, payment: Payment):
-        Order.__allow_init = True
-        order = cls()
-        Order.__allow_init = False
+        order = cls.__new__(cls)  # This skips __init__
+        order_id = OrderId(uuid4())
+        super(Order, order).__init__(order_id)  # Call Aggregate.__init__ manually
+
+        # Initialize fields
+        # order._id = OrderId(uuid4())
+        order._customer_id = customer_id
+        order._order_name = order_name
+        order._shipping_address = shipping_address
+        order._billing_address = billing_address
+        order._payment = payment
+        order._status = OrderStatus.PENDING
+        order._order_items = []
         order.raise_event(OrderCreated(order.id, customer_id, order_name, shipping_address, billing_address, payment))
         return order
     

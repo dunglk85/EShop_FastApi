@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime
-from value_objects.address import Address
-from value_objects.payment import Payment
-from value_objects.order_name import OrderName
-from value_objects.ids import ProductId, CustomerId, OrderId
-from domain.abstraction.domain_event import IDomainEvent, IntegrationEvent
+from src.domain.value_objects.address import Address
+from src.domain.value_objects.payment import Payment
+from src.domain.value_objects.order_name import OrderName
+from src.domain.value_objects.ids import ProductId, CustomerId, OrderId
+from src.domain.abstraction.domain_event import IDomainEvent, IntegrationEvent
 
 
 @dataclass(frozen=True)

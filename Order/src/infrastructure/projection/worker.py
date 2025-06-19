@@ -1,13 +1,13 @@
 import asyncio
 import json
 import datetime
-from infrastructure.db.redis import REDIS_BROKER, get_redis_pool
-from infrastructure.db.read_db import client, DB_NAME, QUEUE_KEY
-
-db = client[DB_NAME]
-projection_log = client["projection_log"]
+from src.infrastructure.db.redis import REDIS_BROKER, get_redis_client
+from src.infrastructure.db.read_db import DB_NAME, QUEUE_KEY, get_read_db
 
 async def handle_event(event):
+    client = get_read_db()
+    db = client[DB_NAME]
+    projection_log = client["projection_log"]
     # Idempotency check
     if await projection_log.projection_log.find_one({"event_id": event["id"]}):
         return
@@ -27,7 +27,7 @@ async def handle_event(event):
     })
 
 async def projection_worker():
-    redis = await get_redis_pool(REDIS_BROKER)
+    redis = await get_redis_client(REDIS_BROKER)
     while True:
         try:
             _, raw_event = await redis.blpop(QUEUE_KEY)

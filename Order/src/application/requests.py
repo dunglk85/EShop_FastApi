@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from domain.value_objects.ids import *
+from src.domain.value_objects.ids import *
 from abc import ABC
-from application.dtos import *
+from src.application.dtos import *
 
 class IRequest(ABC):
 	pass
@@ -20,7 +20,7 @@ class QueryOrdersByCustomerId(IRequest):
 
 @dataclass
 class CommandCreateOrder(IRequest):
-	order: OrderDTO
+	order: OrderDTO_in
 
 @dataclass
 class CommandDeleteOrder(IRequest):

@@ -1,15 +1,16 @@
-from application.repositories.command_order_repository import IQueryOrderRepository
+from src.application.repositories.query_order_repository import IQueryOrderRepository
 from bson import ObjectId
-from infrastructure.db.read_db import client, DB_NAME
+from src.infrastructure.db.read_db import DB_NAME, get_read_db
 
 class QueryOrderRepository(IQueryOrderRepository):
-    def __init__(self):
+    def __init__(self, db):
+        client = db
         self.db = client[DB_NAME]
         self.collection = self.db["orders"]  # your read-model collection
 
     async def get_order_by_id(self, order_id: str):
         """Retrieve an order by its ID."""
-        order = await self.collection.find_one({"_id": ObjectId(order_id)})
+        order = await self.collection.find_one({"_id": str(order_id)})
         return order
 
     async def get_orders_by_customer_id(self, customer_id: str):

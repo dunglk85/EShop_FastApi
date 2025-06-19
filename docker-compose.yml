@@ -165,7 +165,6 @@ services:
       - redis
       - kafka
       - mongo
-
   product_celery_worker:
     build:
       context: ./Product

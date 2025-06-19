@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from typing import List
 from uuid import UUID
-from src.application.dtos import OrderDTO
+from src.application.dtos import *
 from src.domain.models.order import Order
 from src.domain.value_objects.ids import CustomerId, ProductId
 from src.domain.value_objects.order_name import OrderName
 from src.domain.value_objects.address import Address
 from src.domain.value_objects.payment import Payment
 from src.application.repositories.command_order_repository import IcommandOrderRepository
-from application.requests import *
+from src.application.requests import *
 
     
 
@@ -16,25 +16,25 @@ class CreateOrderHandler:
     def __init__(self, repository: IcommandOrderRepository):
         self.repository = repository
 
-    async def handle(self, command: CommandCreateOrder) -> UUID:
+    async def handle(self, command: CommandCreateOrder) -> OrderDTO:
         shipping_address = Address(
             first_name=command.order.shipping_address.first_name,
             last_name=command.order.shipping_address.last_name,
-            email=command.order.shipping_address.email,
             address_line=command.order.shipping_address.address_line,
             country=command.order.shipping_address.country,
             state=command.order.shipping_address.state,
             zip_code=command.order.shipping_address.zip_code,
+            email_address = command.order.shipping_address.email_address
         )
 
         billing_address = Address(
             first_name=command.order.billing_address.first_name,
             last_name=command.order.billing_address.last_name,
-            email=command.order.billing_address.email,
             address_line=command.order.billing_address.address_line,
             country=command.order.billing_address.country,
             state=command.order.billing_address.state,
             zip_code=command.order.billing_address.zip_code,
+            email_address = command.order.billing_address.email_address
         )
 
         payment = Payment(
@@ -42,7 +42,7 @@ class CreateOrderHandler:
             card_number=command.order.payment.card_number,
             expiration=command.order.payment.expiration,
             cvv=command.order.payment.cvv,
-            method=command.order.payment.payment_method,
+            payment_method=command.order.payment.payment_method,
         )
 
         order = Order.create(
@@ -60,4 +60,4 @@ class CreateOrderHandler:
                 price=item.price
             )
         await self.repository.forward(order)
-        return order
+        return map_order_to_dto(order=order)

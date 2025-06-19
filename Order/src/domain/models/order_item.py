@@ -1,7 +1,7 @@
 from typing import Optional
 from src.domain.abstraction.entity import Entity
 from src.domain.value_objects.ids import OrderId, ProductId, OrderItemId
-
+from uuid import UUID, uuid4
 
 class OrderItem(Entity[OrderItemId]):
     def __init__(self, order_id: OrderId, product_id: ProductId, quantity: int, price: float):
@@ -9,8 +9,7 @@ class OrderItem(Entity[OrderItemId]):
             raise ValueError("Quantity must be positive.")
         if price <= 0:
             raise ValueError("Price must be positive.")
-
-        super().__init__(id=OrderItemId.new())
+        super().__init__(id=OrderItemId(uuid4()))
         self._order_id = order_id
         self._product_id = product_id
         self._quantity = quantity

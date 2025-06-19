@@ -11,11 +11,16 @@ class UUIDIdentifier(ABC):
     value: UUID
 
     @classmethod
-    def of(cls: Type[T], value: UUID) -> T:
-        if value is None:
-            raise ValueError(f"{cls.__name__} cannot be None.")
+    def of(cls: Type[T], value: UUID | str) -> T:
+        if isinstance(value, str):
+            try:
+                value = UUID(value)
+            except ValueError:
+                raise DomainException(f"{cls.__name__} must be a valid UUID string.")
+        
         if value.int == 0:
             raise DomainException(f"{cls.__name__} cannot be empty.")
+        
         return cls(value)
 
     def __str__(self) -> str:

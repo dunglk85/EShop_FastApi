@@ -1,5 +1,8 @@
 from aiokafka import AIOKafkaProducer
 import json
+import os
+
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
 
 class KafkaProducer:
     def __init__(self, bootstrap_servers: str):
@@ -16,3 +19,6 @@ class KafkaProducer:
 
     async def send(self, topic: str, value: dict):
         await self._producer.send_and_wait(topic, value)
+
+async def get_kafka_producer():
+    return KafkaProducer(KAFKA_BOOTSTRAP)

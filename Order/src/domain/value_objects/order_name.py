@@ -1,6 +1,6 @@
 from src.domain.exception import DomainException
-from dataclasses import dataclass
-from typing import field, Any
+from dataclasses import dataclass, field
+from typing import Any
 
 @dataclass(frozen=True)
 class OrderName:

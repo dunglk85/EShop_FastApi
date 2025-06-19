@@ -1,4 +1,3 @@
-from src.config import message_bus
 import logging
 import asyncio
 from aiokafka import AIOKafkaProducer

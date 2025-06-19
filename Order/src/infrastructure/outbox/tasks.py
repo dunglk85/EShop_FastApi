@@ -1,4 +1,4 @@
-from infrastructure.outbox.processor import process_outbox_messages
+from src.infrastructure.outbox.processor import process_outbox_messages
 from celery import shared_task
 import asyncio
 

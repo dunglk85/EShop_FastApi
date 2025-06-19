@@ -8,7 +8,7 @@ from src.domain.value_objects.order_name import OrderName
 from src.domain.value_objects.address import Address
 from src.domain.value_objects.payment import Payment
 from src.application.repositories.command_order_repository import IcommandOrderRepository
-from application.requests import *
+from src.application.requests import *
 
 class DeleteOrderHandler:
     def __init__(self, repository: IcommandOrderRepository):

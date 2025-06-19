@@ -1,5 +1,5 @@
 from celery import Celery
-from infrastructure.db.redis import REDIS_URL, REDIS_BROKER, REDIS_BACKEND
+from ..db.redis import REDIS_URL, REDIS_BROKER, REDIS_BACKEND
 
 celery_app = Celery(
     "order_service",

@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: orderdb
     ports:
       - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -19,6 +21,8 @@ services:
     image: mongo:6
     ports:
       - "27017:27017"
+    volumes:
+      - mongodbdata:/data/db
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -28,36 +32,45 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-
+  
   zookeeper:
-    image: bitnami/zookeeper:latest
-    ports:
-      - "2181:2181"
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
-    image: bitnami/kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
     ports:
       - "9092:9092"
-    environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CFG_ADV/ERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
   order:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
+    ports:
+      - "5002:8000"
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_order:5432/orderdb
@@ -69,6 +82,11 @@ services:
       - redis
       - kafka
       - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   order_celery_worker:
     build:
@@ -77,9 +95,10 @@ services:
     command: celery -A src.infrastructure.outbox.celery_worker.celery_app worker --loglevel=info
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres_order:5432/orderdb
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379
       - KAFKA_BOOTSTRAP=kafka:9092
       - MONGO_URI=mongodb://mongo:27017
+      - PYTHONPATH=/app
     depends_on:
       - order
       - redis
@@ -93,8 +112,13 @@ services:
     command: python src/infrastructure/projection/worker.py
     environment:
       - MONGO_URI=mongodb://mongo:27017
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379
+      - PYTHONPATH=/app
     depends_on:
       - order
       - redis
       - mongo
+
+volumes:
+  pgdata:
+  mongodbdata:

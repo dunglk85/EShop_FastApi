@@ -1,36 +1,42 @@
-# infrastructure/event_store/models.py
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import declarative_base
+from typing import Optional, Type
+from pydantic import BaseModel
+from sqlmodel import SQLModel, Field
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy import Column, Integer, String, UniqueConstraint
 
-from domain.abstraction.domain_event import IDomainEvent  # You should define a base class
-from utils.serialization import serialize_event, deserialize_event  # custom helpers
+from src.domain.event_map import EVENT_TYPE_MAPPING
+from src.domain.abstraction.domain_event import IDomainEvent
+from src.utils.serialization import convert_uuids
 
-Base = declarative_base()
-
-
-class EventStoreRecord(Base):
+class EventStoreRecord(SQLModel, table=True):
     __tablename__ = "event_store"
+    __table_args__ = (UniqueConstraint("aggregate_id", "version", name="uix_aggregate_version"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    aggregate_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    aggregate_type = Column(String, nullable=False)
-    event_type = Column(String, nullable=False)
-    payload = Column(JSONB, nullable=False)
-    created_at = Column(DateTime, default=datetime.now, nullable=False)
-    version = Column(int, nullable=False)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    aggregate_id: uuid.UUID = Field(index=True)
+    aggregate_type: str
+    event_type: str
+    payload: dict = Field(sa_column=Column(JSONB))
+    created_at: datetime = Field(default_factory=datetime.now)
+    version: int
 
     @staticmethod
-    def from_domain_event(event: IDomainEvent, aggregate_id: uuid.UUID) -> "EventStoreRecord":
+    def from_domain_event(event: BaseModel, aggregate_id: uuid.UUID, version: int) -> "EventStoreRecord":
+        payload = event.model_dump() if hasattr(event, "model_dump") else event.dict()
+        payload = convert_uuids(payload)
         return EventStoreRecord(
             aggregate_id=aggregate_id,
-            aggregate_type=event.aggregate_type,
-            event_type=event.__class__.__name__,
-            payload=serialize_event(event)
+            aggregate_type=getattr(event, "aggregate_type", type(event).__name__),
+            event_type=type(event).__name__,
+            payload=payload,
+            version=version
         )
 
     @staticmethod
-    def to_domain_event(record: "EventStoreRecord") -> IDomainEvent:
-        return deserialize_event(record.event_type, record.payload)
+    def to_domain_event(record: "EventStoreRecord") -> BaseModel:
+        event_cls: Type[BaseModel] = EVENT_TYPE_MAPPING.get(record.event_type)
+        if not event_cls:
+            raise ValueError(f"Unknown event type: {record.event_type}")
+        return event_cls(**record.payload)

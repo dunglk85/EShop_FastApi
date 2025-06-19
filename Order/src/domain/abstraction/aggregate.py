@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, TypeVar, Type, cast
 import datetime
 
-from domain.abstraction.entity import IEntityWithId
-from domain.abstraction.domain_event import IDomainEvent
+from src.domain.abstraction.entity import IEntityWithId
+from src.domain.abstraction.domain_event import IDomainEvent
 
 T = TypeVar("T")  # ID type
 TAggregate = TypeVar("TAggregate", bound="Aggregate")
@@ -20,9 +20,9 @@ class Aggregate(IAggregateId[T], ABC):
         last_modified_by: Optional[str] = None,
     ):
         self._id: T = id
-        self.created_at: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
+        self.created_at: datetime.datetime = datetime.datetime.now()
         self.created_by: Optional[str] = created_by
-        self.last_modified: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
+        self.last_modified: datetime.datetime = datetime.datetime.now()
         self.last_modified_by: Optional[str] = last_modified_by
         self._domain_events: List[IDomainEvent] = []
 

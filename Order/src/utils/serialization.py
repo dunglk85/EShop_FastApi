@@ -1,4 +1,4 @@
-from domain.events import (
+from src.domain.events import (
 	OrderCreated,
 	OrderCanceled,
 	OrderConfirmed,
@@ -38,3 +38,14 @@ def deserialize_event(event_type: str, payload: dict):
     if not event_cls:
         raise ValueError(f"Unknown event type: {event_type}")
     return event_cls(**payload)
+
+def convert_uuids(obj):
+    import uuid
+    if isinstance(obj, dict):
+        return {k: convert_uuids(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_uuids(i) for i in obj]
+    elif isinstance(obj, uuid.UUID):
+        return str(obj)
+    else:
+        return obj

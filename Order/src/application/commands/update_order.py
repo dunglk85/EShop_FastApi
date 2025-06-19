@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from src.application.repositories.command_order_repository import IcommandOrderRepository
 from src.domain.value_objects.ids import OrderId
-from src.application.dtos import OrderDTO
-from application.requests import *
+from src.application.dtos import *
+from src.application.requests import *
 
 
 class UpdateOrderHandler:
@@ -33,8 +33,8 @@ class UpdateOrderHandler:
                         new_item = value[item.product_id]
                         order.change_item(
 							product_id=item.product_id,
-							new_quantity=new_item.quantity,
-							new_price=new_item.price
+							quantity=new_item.quantity,
+							price=new_item.price
 						)
                         value.pop(item.product_id, None)
                     else:
@@ -49,4 +49,4 @@ class UpdateOrderHandler:
                     
         # Save the updated aggregate
         await self.repository.forward(order)
-        return order
+        return map_order_to_dto(order=order)
